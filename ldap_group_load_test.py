@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 
-from __future__ import print_function
+from __future__ import division, print_function
 import argparse
+import datetime
 from twisted.internet import reactor, defer
 from twisted.internet.endpoints import clientFromString, connectProtocol
 from twisted.internet.task import react
@@ -47,13 +48,27 @@ def onConnect(client, args):
     req_delete_memberof = delete_memberof.asLDAP()
     req_add_member = add_member.asLDAP()
     req_delete_member = delete_member.asLDAP()
+    total_time = 0
+    total_changes = 0
     for n in range(args.iterations):
+        start = datetime.datetime.now()
         yield defer.gatherResults([
             send_request(client, req_add_memberof),
             send_request(client, req_add_member)])
+        end = datetime.datetime.now()
+        elapsed = (end - start).total_seconds()
+        total_time += elapsed
+        total_changes += 1
+        start = datetime.datetime.now()
         yield defer.gatherResults([
             send_request(client, req_delete_memberof),
             send_request(client, req_delete_member)])
+        end = datetime.datetime.now()
+        elapsed = (end - start).total_seconds()
+        total_time += elapsed
+        total_changes += 1
+    mean_time = total_time / total_changes
+    print("Mean time in seconds for a membership change: {}".format(mean_time))
 
 @defer.inlineCallbacks
 def send_request(client, req):
