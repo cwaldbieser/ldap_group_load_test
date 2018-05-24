@@ -50,6 +50,8 @@ def onConnect(client, args):
     req_delete_member = delete_member.asLDAP()
     total_time = 0
     total_changes = 0
+    max_time = 0
+    min_time = 100000000.0
     for n in range(args.iterations):
         start = datetime.datetime.now()
         yield defer.gatherResults([
@@ -59,6 +61,8 @@ def onConnect(client, args):
         elapsed = (end - start).total_seconds()
         total_time += elapsed
         total_changes += 1
+        max_time = max(max_time, elapsed)
+        min_time = min(min_time, elapsed)
         start = datetime.datetime.now()
         yield defer.gatherResults([
             send_request(client, req_delete_memberof),
@@ -67,8 +71,14 @@ def onConnect(client, args):
         elapsed = (end - start).total_seconds()
         total_time += elapsed
         total_changes += 1
+        max_time = max(max_time, elapsed)
+        min_time = min(min_time, elapsed)
     mean_time = total_time / total_changes
-    print("Mean time in seconds for a membership change: {}".format(mean_time))
+    print("Total time spent on changing memberships: {} seconds".format(total_time))
+    print("Total membership changes: {} changes".format(total_changes))
+    print("Mean time for a membership change: {} seconds".format(mean_time))
+    print("Max time for a membership change: {} seconds".format(max_time))
+    print("Min time for a membership change: {} seconds".format(min_time))
 
 @defer.inlineCallbacks
 def send_request(client, req):
